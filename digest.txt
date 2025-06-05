@@ -1,0 +1,449 @@
+# Repository Analysis
+
+## Summary
+
+Directory: home/yatharth/Documents/AIB/voter-project/server
+Files analyzed: 10
+
+Estimated tokens: 2.8k
+
+## Directory Structure
+
+Directory structure:
+└── server/
+    ├── index.js
+    ├── package.json
+    ├── configs/
+    │   ├── config.js
+    │   └── database.js
+    ├── controllers/
+    │   └── admin/
+    │       └── adminAuth.controller.js
+    ├── middlewares/
+    │   └── adminAuthMiddleware.js
+    ├── models/
+    │   ├── AdminModel.js
+    │   ├── VoterModel (Modular Design).js
+    │   └── VoterModel.js
+    └── routes/
+        └── adminAuth.routes.js
+
+
+## Files Content
+
+================================================
+File: index.js
+================================================
+import express from "express";
+import dotenv from "dotenv";
+import connectDB from "./configs/database.js";
+import config from "./configs/config.js";
+import adminRoutes from "./routes/adminAuth.routes.js";
+
+dotenv.config();
+
+const app = express();
+
+// Middleware to parse JSON request bodies
+app.use(express.json());
+
+// Connect to MongoDB
+connectDB();
+
+//
+app.get("/", (req, res) => {
+  res.send(`Welcome to the Scheduling API! Environment: ${config.NODE_ENV}`);
+});
+
+// Admin Authentication Routes
+// All routes starting with /api/admin will be handled by adminRoutes
+app.use("/api/admin", adminRoutes);
+
+// Error handling middleware (optional, but good practice)
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).send("? Something broke!");
+});
+
+// Start the server
+app.listen(config.PORT, () => {
+  console.log(
+    `> Server running on port ${config.PORT} in ${config.NODE_ENV} mode`
+  );
+  console.log(`> Access the API at http://localhost:${config.PORT}`);
+});
+
+
+
+================================================
+File: package.json
+================================================
+{
+  "name": "server",
+  "version": "1.0.0",
+  "description": "voter project",
+  "license": "ISC",
+  "author": "",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "nodemon src/index.js",
+    "start": "node src/index.js"
+  },
+  "dependencies": {
+    "bcryptjs": "^3.0.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.5.0",
+    "express": "^5.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.15.1",
+    "nodemon": "^3.1.10"
+  }
+}
+
+
+
+================================================
+File: configs/config.js
+================================================
+import dotenv from "dotenv";
+
+dotenv.config();
+
+// Export the environment variables
+const config = {
+  MONGODB_URI: process.env.MONGODB_URI,
+  NODE_ENV: process.env.NODE_ENV || "development", // Provide a default in case it's not set
+  PORT: process.env.PORT || 3000, // Provide a default
+  JWT_SECRET: process.env.JWT_SECRET,
+  JWT_EXPIRATION: process.env.JWT_EXPIRATION || "1h", // Provide a default
+};
+
+// Optional: You can also add a check to ensure critical variables are set
+if (!config.MONGODB_URI) {
+  console.error("> Error: MONGODB_URI is not defined in .env");
+  process.exit(1); // Exit the process if a critical variable is missing
+}
+
+if (!config.JWT_SECRET) {
+  console.error("> Error: JWT_SECRET is not defined in .env");
+  process.exit(1);
+}
+
+console.log(`> Environment: ${config.NODE_ENV}`);
+console.log(`> Port: ${config.PORT}`);
+// console.log(`MongoDB URI: ${config.MONGODB_URI}`); // Avoid logging sensitive info in production
+
+export default config;
+
+
+
+================================================
+File: configs/database.js
+================================================
+import mongoose from "mongoose";
+import config from "./config.js";
+
+async function connectDB() {
+  try {
+    await mongoose.connect(config.MONGODB_URI, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+      // Other options can be added here if needed.
+    });
+    console.log("> MongoDB connected successfully");
+  } catch (error) {
+    console.error("> MongoDB connection error:", error.message);
+    process.exit(1);
+  }
+}
+
+export default connectDB;
+
+
+
+================================================
+File: controllers/admin/adminAuth.controller.js
+================================================
+import Admin from "../../models/AdminModel.js";
+import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
+import config from "../../configs/config.js";
+
+const generateToken = (id) => {
+  return jwt.sign({ id }, config.JWT_SECRET, {
+    expiresIn: config.JWT_EXPIRATION || "1h",
+  });
+};
+
+export const loginAdmin = async (req, res) => {
+  try {
+    const { username, password } = req.body;
+
+    // Find the admin by username
+    const admin = await Admin.findOne({ username });
+    if (!admin) {
+      return res.status(401).json({ message: "Invalid credentials" });
+    }
+
+    // Compare the password
+    const isPasswordValid = await bcrypt.compare(password, admin.password);
+    if (!isPasswordValid) {
+      return res.status(401).json({ message: "Invalid credentials" });
+    }
+
+    // Generate a JWT token
+    const token = generateToken(admin._id);
+
+    res.status(200).json({ token, message: "Admin logged in successfully" });
+  } catch (error) {
+    console.error("> Error logging in admin: ", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+export const registerAdmin = async (req, res) => {
+  try {
+    const { name, username, password } = req.body;
+
+    // Check if admin already exists
+    const existingAdmin = await Admin.findOne({ username });
+    if (existingAdmin) {
+      return res
+        .status(400)
+        .json({ message: "Admin with this username already exists" });
+    }
+
+    // Hash the password
+    const hashedPassword = await bcrypt.hash(password, 5);
+
+    // Create a new admin
+    const newAdmin = new Admin({
+      name,
+      username,
+      password: hashedPassword,
+    });
+
+    // Save the admin to the database
+    await newAdmin.save();
+
+    res.status(201).json({ message: "Admin registered successfully" });
+  } catch (error) {
+    console.error("> Error registering admin: ", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+
+
+================================================
+File: middlewares/adminAuthMiddleware.js
+================================================
+import jwt from "jsonwebtoken";
+import config from "../configs/config.js";
+import Admin from "../models/AdminModel.js";
+
+export const verifyAdminToken = async (req, res, next) => {
+  try {
+    // Get the token from the Authorization header
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return res
+        .status(401)
+        .json({ message: "Unauthorized: No token provided" });
+    }
+
+    const token = authHeader.split(" ")[1];
+
+    // Verify the token
+    jwt.verify(token, config.JWT_SECRET, async (err, decoded) => {
+      if (err) {
+        return res.status(401).json({ message: "Unauthorized: Invalid token" });
+      }
+
+      // Find the admin based on the decoded ID
+      const admin = await Admin.findById(decoded.id).select("-password"); // Exclude password from the fetched admin
+      if (!admin) {
+        return res
+          .status(401)
+          .json({ message: "Unauthorized: Admin not found" });
+      }
+
+      // Attach the admin object to the request for further use
+      req.admin = admin;
+      next(); // Proceed to the next middleware or route handler
+    });
+  } catch (error) {
+    console.error("> Error verifying admin token:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+
+
+================================================
+File: models/AdminModel.js
+================================================
+import mongoose from "mongoose";
+
+const AdminSchema = new mongoose.Schema({
+  name: { type: String, required: true },
+  username: { type: String, required: true, unique: true },
+  password: { type: String, required: true },
+  role: { type: String, default: "admin" },
+  createdAt: { type: Date, default: Date.now },
+});
+
+const Admin = mongoose.model("Admin", AdminSchema);
+
+export default Admin;
+
+
+
+================================================
+File: models/VoterModel (Modular Design).js
+================================================
+import mongoose from "mongoose";
+
+const AddressSchema = new mongoose.Schema(
+  {
+    houseNo: { type: String },
+    addressLine1: { type: String },
+    addressLine2: { type: String },
+    hometown: { type: String },
+    policeStation: { type: String },
+    taluka: { type: String },
+    district: { type: String },
+    pinCode: { type: String },
+  },
+  { _id: false }
+);
+
+const ConstituencySchema = new mongoose.Schema(
+  {
+    assembly: {
+      number: { type: Number },
+      name: { type: String },
+      reservationStatus: { type: String },
+    },
+    lokSabha: {
+      number: { type: Number },
+      name: { type: String },
+      reservationStatus: { type: String },
+    },
+    sectionDetails: { type: String }, // Number and Name of Sections in Part
+    yadiNumber: { type: String },
+  },
+  { _id: false }
+);
+
+const PersonalInfoSchema = new mongoose.Schema(
+  {
+    fullName: { type: String, required: true },
+    firstName: { type: String },
+    lastName: { type: String },
+    relativeName: { type: String }, // Husband/Father/Mother Name
+    gender: { type: String, enum: ["Male", "Female", "Other"], required: true },
+    age: { type: Number },
+    mobileNumber: { type: String },
+    caste: { type: String },
+  },
+  { _id: false }
+);
+
+const VoterSchema = new mongoose.Schema({
+  voterId: { type: String, required: true, unique: true },
+  personalInfo: { type: PersonalInfoSchema, required: true },
+  address: { type: AddressSchema },
+  constituency: { type: ConstituencySchema },
+});
+
+export default mongoose.model("Voter", VoterSchema);
+
+
+
+================================================
+File: models/VoterModel.js
+================================================
+// Monolithic Design
+
+import mongoose from "mongoose";
+
+const VoterSchema = new mongoose.Schema({
+  voterId: { type: String, required: true, unique: true },
+  fullName: { type: String, required: true },
+  firstName: { type: String },
+  lastName: { type: String },
+  relativeName: { type: String }, // Husband/Father/Mother Name
+  houseNo: { type: String },
+  addressLine1: { type: String },
+  addressLine2: { type: String },
+  gender: { type: String, enum: ["Male", "Female", "Other"], required: true },
+  age: { type: Number },
+  mobileNumber: { type: String },
+  caste: { type: String },
+  sectionDetails: { type: String }, // Number and Name of Sections in Part
+  yadiNumber: { type: String },
+  assemblyConstituencyNumber: { type: Number },
+  assemblyConstituencyName: { type: String },
+  assemblyReservationStatus: { type: String },
+  lokSabhaConstituencyNumber: { type: Number },
+  lokSabhaConstituencyName: { type: String },
+  lokSabhaReservationStatus: { type: String },
+  hometown: { type: String },
+  policeStation: { type: String },
+  taluka: { type: String },
+  district: { type: String },
+  pinCode: { type: String },
+});
+
+const Voter = mongoose.model("Voter", VoterSchema);
+
+export default Voter;
+
+
+
+================================================
+File: routes/adminAuth.routes.js
+================================================
+import express from "express";
+
+import {
+  registerAdmin,
+  loginAdmin,
+} from "../controllers/admin/adminAuth.controller.js";
+import { verifyAdminToken } from "../middlewares/adminAuthMiddleware.js";
+
+const router = express.Router();
+
+/**
+ * @route POST api/auth/register
+ * @desc Register a new admin
+ * @access Public
+ */
+router.post("/register", registerAdmin);
+
+/**
+ * @route POST api/auth/login
+ * @desc Login an existing admin and return a JWT token
+ * @access Public
+ */
+router.post("/login", loginAdmin);
+
+/**
+ * @route GET api/admin/dashboard
+ * @desc Access the admin dashboard (protected route)
+ * @access Private (requires admin authentication via JWT)
+ */
+// TODO: bulk import/ export data.
+router.get("/dashboard", verifyAdminToken, (req, res) => {
+  res.json({
+    message: "Admin dashboard accessed successfully",
+    admin: req.admin,
+  });
+});
+
+export default router;
+
+
