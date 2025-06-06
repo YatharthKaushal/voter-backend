@@ -37,4 +37,4 @@ app.listen(config.PORT, () => {
     `> Server running on port ${config.PORT} in ${config.NODE_ENV} mode`
   );
   console.log(`> Access the API at http://localhost:${config.PORT}`);
-});add .
+});

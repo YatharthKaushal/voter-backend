@@ -10,6 +10,7 @@ import {
   bulkImportVoters,
   bulkExportVoters,
   searchVoters,
+  getVotersByVoterId,
 } from "../controllers/voter.controller.js";
 import { verifyAdminToken } from "../middlewares/adminAuthMiddleware.js";
 
@@ -73,5 +74,12 @@ router.post("/voters/import", bulkImportVoters);
  * @access Private (requires admin authentication via JWT)
  */
 router.get("/voters/export", bulkExportVoters);
+
+/**
+ * @route GET /api/voters/voterId/:voterId
+ * @desc Get voters by voterId
+ * @access Private (requires admin authentication via JWT)
+ */
+router.get("/voters/voterId/:voterId", getVotersByVoterId);
 
 export default router;

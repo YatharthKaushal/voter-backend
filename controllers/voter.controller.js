@@ -22,6 +22,18 @@ export const getVoterById = async (req, res) => {
   }
 };
 
+// Get Voters by Voter ID
+export const getVotersByVoterId = async (req, res) => {
+  try {
+    const voters = await Voter.find({ voterId: req.params.voterId });
+    if (voters.length === 0)
+      return res.status(404).json({ message: "No voters found" });
+    res.status(200).json(voters);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
 // Update Voter
 export const updateVoter = async (req, res) => {
   try {
