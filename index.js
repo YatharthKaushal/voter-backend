@@ -1,5 +1,6 @@
 import express from "express";
 import dotenv from "dotenv";
+import cors from "cors";
 import connectDB from "./configs/database.js";
 import config from "./configs/config.js";
 import adminRoutes from "./routes/adminAuth.routes.js";
@@ -8,6 +9,15 @@ import voterRoutes from "./routes/voter.routes.js";
 dotenv.config();
 
 const app = express();
+
+// config cors polisy from config.js
+app.use(
+  cors({
+    origin: config.CORS_ORIGIN, // Allow all origins for development
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    credentials: true, // Allow credentials if needed
+  })
+);
 
 // Middleware to parse JSON request bodies
 app.use(express.json());

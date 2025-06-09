@@ -58,15 +58,44 @@ export const deleteVoter = async (req, res) => {
   }
 };
 
+// // Pagination Function (25 per page)
+// export const paginateVoters = async (req, res) => {
+//   const page = parseInt(req.query.page) || 1;
+//   const limit = 25;
+//   try {
+//     const voters = await Voter.find()
+//       .skip((page - 1) * limit)
+//       .limit(limit);
+//     const total = await Voter.countDocuments();
+//     res.status(200).json({
+//       total,
+//       page,
+//       totalPages: Math.ceil(total / limit),
+//       data: voters,
+//     });
+//   } catch (err) {
+//     res.status(500).json({ message: err.message });
+//   }
+// };
+
 // Pagination Function (25 per page)
 export const paginateVoters = async (req, res) => {
   const page = parseInt(req.query.page) || 1;
-  const limit = 25;
+  const limit = parseInt(req.query.limit) || 25;
+
+  if (page < 1 || limit < 1) {
+    return res
+      .status(400)
+      .json({ message: "Invalid page or limit parameters" });
+  }
+
   try {
     const voters = await Voter.find()
       .skip((page - 1) * limit)
-      .limit(limit);
+      .limit(limit)
+      .lean(); // Improve performance by converting to plain JS object
     const total = await Voter.countDocuments();
+
     res.status(200).json({
       total,
       page,
@@ -74,12 +103,14 @@ export const paginateVoters = async (req, res) => {
       data: voters,
     });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    res.status(500).json({ message: "Server error", error: err.message });
   }
 };
 
 // Bulk Import
 export const bulkImportVoters = async (req, res) => {
+  // console.log("> reached bulkImportVoters controller");
+  // console.log("> Request body:", req.body); // Log the request body for debugging
   try {
     const voters = req.body; // expects array
     if (!Array.isArray(voters)) {
@@ -94,6 +125,7 @@ export const bulkImportVoters = async (req, res) => {
 
 // Bulk Export
 export const bulkExportVoters = async (req, res) => {
+  console.log("> reached bulkExportVoters controller");
   try {
     const voters = await Voter.find();
     res.setHeader("Content-Type", "application/json");
@@ -138,5 +170,161 @@ export const searchVoters = async (req, res) => {
     });
   } catch (err) {
     res.status(500).json({ message: err.message });
+  }
+};
+
+export const getVoterStats = async (req, res) => {
+  try {
+    const stats = {};
+
+    // 1. Total Voter Count
+    const totalVotersPromise = Voter.countDocuments({});
+
+    // 2. Gender Distribution
+    const genderDistributionPromise = Voter.aggregate([
+      {
+        $group: {
+          _id: "$gender",
+          count: { $sum: 1 },
+        },
+      },
+    ]);
+
+    // 3. Age Distribution (by range)
+    const ageGroupDistributionPromise = Voter.aggregate([
+      {
+        $bucket: {
+          groupBy: "$age",
+          boundaries: [18, 25, 35, 45, 55, 65, Infinity], // Define your age ranges
+          default: "Other",
+          output: {
+            count: { $sum: 1 },
+          },
+        },
+      },
+      { $sort: { _id: 1 } }, // Sort by age group
+    ]);
+
+    // 4. Age Statistics (Min, Max, Avg, StdDev)
+    const ageStatisticsPromise = Voter.aggregate([
+      {
+        $group: {
+          _id: null,
+          averageAge: { $avg: "$age" },
+          minAge: { $min: "$age" },
+          maxAge: { $max: "$age" },
+          stdDevAge: { $stdDevPop: "$age" },
+        },
+      },
+      { $project: { _id: 0 } }, // Exclude _id from result
+    ]);
+
+    // 5. District Distribution
+    const districtDistributionPromise = Voter.aggregate([
+      {
+        $group: {
+          _id: "$district",
+          count: { $sum: 1 },
+        },
+      },
+      { $sort: { count: -1 } }, // Sort by count (descending)
+    ]);
+
+    // 6. Assembly Constituency Distribution
+    const assemblyConstituencyDistributionPromise = Voter.aggregate([
+      {
+        $group: {
+          _id: "$assemblyConstituencyName",
+          count: { $sum: 1 },
+        },
+      },
+      { $sort: { count: -1 } },
+    ]);
+
+    // 7. Lok Sabha Constituency Distribution
+    const lokSabhaConstituencyDistributionPromise = Voter.aggregate([
+      {
+        $group: {
+          _id: "$lokSabhaConstituencyName",
+          count: { $sum: 1 },
+        },
+      },
+      { $sort: { count: -1 } },
+    ]);
+
+    // 8. Missing Data Counts
+    const missingHouseNoPromise = Voter.countDocuments({ houseNo: "Missing" });
+    const missingAddressLine1Promise = Voter.countDocuments({
+      addressLine1: "Missing",
+    });
+    const missingAddressLine2Promise = Voter.countDocuments({
+      addressLine2: "Missing",
+    });
+    const missingMobileNumberPromise = Voter.countDocuments({
+      mobileNumber: "Missing",
+    });
+    const missingCastePromise = Voter.countDocuments({ caste: "Missing" });
+
+    // Execute all promises concurrently
+    const [
+      totalVoters,
+      genderDistribution,
+      ageGroupDistribution,
+      ageStatistics,
+      districtDistribution,
+      assemblyConstituencyDistribution,
+      lokSabhaConstituencyDistribution,
+      missingHouseNo,
+      missingAddressLine1,
+      missingAddressLine2,
+      missingMobileNumber,
+      missingCaste,
+    ] = await Promise.all([
+      totalVotersPromise,
+      genderDistributionPromise,
+      ageGroupDistributionPromise,
+      ageStatisticsPromise,
+      districtDistributionPromise,
+      assemblyConstituencyDistributionPromise,
+      lokSabhaConstituencyDistributionPromise,
+      missingHouseNoPromise,
+      missingAddressLine1Promise,
+      missingAddressLine2Promise,
+      missingMobileNumberPromise,
+      missingCastePromise,
+    ]);
+
+    // Organize results into the stats object
+    stats.totalVoters = totalVoters;
+    stats.genderDistribution = genderDistribution;
+    stats.ageGroupDistribution = ageGroupDistribution;
+    stats.ageStatistics = ageStatistics[0] || {}; // ageStatistics returns an array, take the first element
+    stats.geographicalDistribution = {
+      district: districtDistribution,
+      assemblyConstituency: assemblyConstituencyDistribution,
+      lokSabhaConstituency: lokSabhaConstituencyDistribution,
+    };
+    stats.missingDataCounts = {
+      houseNo: missingHouseNo,
+      addressLine1: missingAddressLine1,
+      addressLine2: missingAddressLine2,
+      mobileNumber: missingMobileNumber,
+      caste: missingCaste,
+    };
+    // Calculate percentages for missing data
+    stats.missingDataPercentages = {
+      houseNo: ((missingHouseNo / totalVoters) * 100).toFixed(2),
+      addressLine1: ((missingAddressLine1 / totalVoters) * 100).toFixed(2),
+      addressLine2: ((missingAddressLine2 / totalVoters) * 100).toFixed(2),
+      mobileNumber: ((missingMobileNumber / totalVoters) * 100).toFixed(2),
+      caste: ((missingCaste / totalVoters) * 100).toFixed(2),
+    };
+
+    res.status(200).json({ success: true, data: stats });
+  } catch (error) {
+    console.error("Error fetching voter stats:", error);
+    res
+      .status(500)
+      .json({ success: false, message: "Server error", error: error.message });
   }
 };

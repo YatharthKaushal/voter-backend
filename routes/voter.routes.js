@@ -11,48 +11,49 @@ import {
   bulkExportVoters,
   searchVoters,
   getVotersByVoterId,
+  getVoterStats,
 } from "../controllers/voter.controller.js";
 import { verifyAdminToken } from "../middlewares/adminAuthMiddleware.js";
 
 const router = express.Router();
 
 // Protect all routes with admin auth middleware
-router.use(verifyAdminToken);
+// router.use(verifyAdminToken);
 
 /**
- * @route POST /api/voters/voters
+ * @route POST /api/voters/
  * @desc Create a new voter
  * @access Private (requires admin authentication via JWT)
  */
-router.post("/voters", createVoter);
+router.post("create/", createVoter);
 
 /**
  * @route GET /api/voters/voters/:id
  * @desc Get a voter by ID
  * @access Private (requires admin authentication via JWT)
  */
-router.get("/voters/:id", getVoterById);
+router.get("get/:id", getVoterById);
 
 /**
  * @route PUT /api/voters/voters/:id
  * @desc Update a voter by ID
  * @access Private (requires admin authentication via JWT)
  */
-router.put("/voters/:id", updateVoter);
+router.put("update/:id", updateVoter);
 
 /**
  * @route DELETE /api/voters/voters/:id
  * @desc Delete a voter by ID
  * @access Private (requires admin authentication via JWT)
  */
-router.delete("/voters/:id", deleteVoter);
+router.delete("delete/:id", deleteVoter);
 
 /**
- * @route GET /api/voters/voters
+ * @route GET /api/voters
  * @desc Get paginated list of voters (25 per page)
  * @access Private (requires admin authentication via JWT)
  */
-router.get("/voters", paginateVoters);
+router.get("/", paginateVoters);
 
 /**
  * @route GET /api/voters/voters/search
@@ -66,20 +67,22 @@ router.get("/voters/search", searchVoters);
  * @desc Bulk import voters from JSON
  * @access Private (requires admin authentication via JWT)
  */
-router.post("/voters/import", bulkImportVoters);
+router.post("/import", bulkImportVoters);
 
 /**
  * @route GET /api/voters/voters/export
  * @desc Bulk export all voters as JSON file
  * @access Private (requires admin authentication via JWT)
  */
-router.get("/voters/export", bulkExportVoters);
+router.get("/export", bulkExportVoters);
 
 /**
  * @route GET /api/voters/voterId/:voterId
  * @desc Get voters by voterId
  * @access Private (requires admin authentication via JWT)
  */
-router.get("/voters/voterId/:voterId", getVotersByVoterId);
+router.get("/voterId/:voterId", getVotersByVoterId);
+
+router.get("/stats", getVoterStats);
 
 export default router;

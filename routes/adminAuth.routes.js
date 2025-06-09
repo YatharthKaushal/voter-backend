@@ -3,6 +3,7 @@ import express from "express";
 import {
   registerAdmin,
   loginAdmin,
+  getAdminDetails,
 } from "../controllers/admin/adminAuth.controller.js";
 import { verifyAdminToken } from "../middlewares/adminAuthMiddleware.js";
 
@@ -21,6 +22,14 @@ router.post("/register", registerAdmin);
  * @access Public
  */
 router.post("/login", loginAdmin);
+
+// get admin details
+/**
+ * @route GET api/auth/admin
+ * @desc Get details of the authenticated admin
+ * @access Private (requires admin authentication via JWT)
+ */
+router.get("/admin", verifyAdminToken, getAdminDetails);
 
 /**
  * @route GET api/admin/dashboard

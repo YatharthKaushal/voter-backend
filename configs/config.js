@@ -9,6 +9,8 @@ const config = {
   PORT: process.env.PORT || 3000, // Provide a default
   JWT_SECRET: process.env.JWT_SECRET,
   JWT_EXPIRATION: process.env.JWT_EXPIRATION || "1h", // Provide a default
+  // CORS_ORIGIN: process.env.CORS_ORIGIN || "*", // Allow all origins for development
+  CORS_ORIGIN: process.env.CORS_ORIGIN || "http://localhost:3000",
 };
 
 // Optional: You can also add a check to ensure critical variables are set
