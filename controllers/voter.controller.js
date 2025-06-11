@@ -97,6 +97,7 @@ export const paginateVoters = async (req, res) => {
       .limit(limit)
       .lean(); // Improve performance by converting to plain JS object
     const total = await Voter.countDocuments();
+    console.log("> voters", voters);
 
     res.status(200).json({
       total,
