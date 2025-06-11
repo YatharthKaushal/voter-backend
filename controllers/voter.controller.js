@@ -85,6 +85,7 @@ export const paginateVoters = async (req, res) => {
   const limit = parseInt(req.query.limit) || 25;
 
   if (page < 1 || limit < 1) {
+    console.log("> Invalid page or limit parameters:", { page, limit });
     return res
       .status(400)
       .json({ message: "Invalid page or limit parameters" });
@@ -104,6 +105,7 @@ export const paginateVoters = async (req, res) => {
       data: voters,
     });
   } catch (err) {
+    console.log("> Error in paginateVoters:", err);
     res.status(500).json({ message: "Server error", error: err.message });
   }
 };
