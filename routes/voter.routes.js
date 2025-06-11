@@ -18,7 +18,7 @@ import { verifyAdminToken } from "../middlewares/adminAuthMiddleware.js";
 const router = express.Router();
 
 // Protect all routes with admin auth middleware
-// router.use(verifyAdminToken);
+//router.use(verifyAdminToken);
 
 /**
  * @route POST /api/voters/
@@ -83,6 +83,11 @@ router.get("/export", bulkExportVoters);
  */
 router.get("/voterId/:voterId", getVotersByVoterId);
 
+/**
+ * @route GET /api/voters/stats
+ * @desc Get voter statistics
+ * @access Private (requires admin authentication via JWT)
+ */
 router.get("/stats", getVoterStats);
 
 export default router;

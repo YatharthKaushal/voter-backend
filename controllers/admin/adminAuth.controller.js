@@ -67,6 +67,7 @@ export const loginAdmin = async (req, res) => {
   }
 };
 
+
 export const registerAdmin = async (req, res) => {
   try {
     const { name, username, password } = req.body;
