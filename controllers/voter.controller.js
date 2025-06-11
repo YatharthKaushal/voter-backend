@@ -80,6 +80,7 @@ export const deleteVoter = async (req, res) => {
 
 // Pagination Function (25 per page)
 export const paginateVoters = async (req, res) => {
+  console.log("> reached paginateVoters controller");
   const page = parseInt(req.query.page) || 1;
   const limit = parseInt(req.query.limit) || 25;
 
