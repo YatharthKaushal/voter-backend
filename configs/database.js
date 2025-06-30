@@ -4,8 +4,8 @@ import config from "./config.js";
 async function connectDB() {
   try {
     await mongoose.connect(config.MONGODB_URI, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
+      // useNewUrlParser: true,
+      // useUnifiedTopology: true,
       // Other options can be added here if needed.
     });
     console.log("> MongoDB connected successfully");

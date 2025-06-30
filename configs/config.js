@@ -10,6 +10,7 @@ const config = {
   JWT_SECRET: process.env.JWT_SECRET,
   JWT_EXPIRATION: process.env.JWT_EXPIRATION || "1h", // Provide a default
   // CORS_ORIGIN: process.env.CORS_ORIGIN || "*", // Allow all origins for development
+  // CORS_ORIGIN: "https://voter-db-frontend.vercel.app",
   CORS_ORIGIN: "https://voter-db-frontend.vercel.app",
   //  CORS_ORIGIN: process.env.CORS_ORIGIN || "http://localhost:3000",
 };

@@ -1,5 +1,3 @@
-// File: routes/voter.routes.js
-
 import express from "express";
 import {
   createVoter,
@@ -12,6 +10,9 @@ import {
   searchVoters,
   getVotersByVoterId,
   getVoterStats,
+  allVoters,
+  exportVotersToCSV,
+  bulkImportVotersCSV,
 } from "../controllers/voter.controller.js";
 import { verifyAdminToken } from "../middlewares/adminAuthMiddleware.js";
 
@@ -21,32 +22,32 @@ const router = express.Router();
 //router.use(verifyAdminToken);
 
 /**
- * @route POST /api/voters/
+ * @route POST /api/voters/create
  * @desc Create a new voter
  * @access Private (requires admin authentication via JWT)
  */
-router.post("create/", createVoter);
+router.post("/create", createVoter);
 
 /**
- * @route GET /api/voters/voters/:id
+ * @route GET /api/voters/get/:id
  * @desc Get a voter by ID
  * @access Private (requires admin authentication via JWT)
  */
-router.get("get/:id", getVoterById);
+router.get("/get/:id", getVoterById);
 
 /**
- * @route PUT /api/voters/voters/:id
+ * @route PUT /api/voters/update/:id
  * @desc Update a voter by ID
  * @access Private (requires admin authentication via JWT)
  */
-router.put("update/:id", updateVoter);
+router.put("/update/:id", updateVoter);
 
 /**
- * @route DELETE /api/voters/voters/:id
+ * @route DELETE /api/voters/delete/:id
  * @desc Delete a voter by ID
  * @access Private (requires admin authentication via JWT)
  */
-router.delete("delete/:id", deleteVoter);
+router.delete("/delete/:id", deleteVoter);
 
 /**
  * @route GET /api/voters
@@ -56,21 +57,35 @@ router.delete("delete/:id", deleteVoter);
 router.get("/", paginateVoters);
 
 /**
- * @route GET /api/voters/voters/search
+ * @route GET /api/voters/all
+ * @desc Get full list of voters
+ * @access Private (requires admin authentication via JWT)
+ */
+router.get("/all", allVoters);
+
+/**
+ * @route GET /api/voters/search
  * @desc Search voters with filters (paginated)
  * @access Private (requires admin authentication via JWT)
  */
-router.get("/voters/search", searchVoters);
+router.get("/search", searchVoters);
 
 /**
- * @route POST /api/voters/voters/import
+ * @route POST /api/voters/import
  * @desc Bulk import voters from JSON
  * @access Private (requires admin authentication via JWT)
  */
 router.post("/import", bulkImportVoters);
 
 /**
- * @route GET /api/voters/voters/export
+ * @route POST /api/voters/import-csv
+ * @desc Bulk import voters from CSV
+ * @access Private (requires admin authentication via JWT)
+ */
+router.post("/import-csv", bulkImportVotersCSV);
+
+/**
+ * @route GET /api/voters/export
  * @desc Bulk export all voters as JSON file
  * @access Private (requires admin authentication via JWT)
  */
@@ -89,5 +104,12 @@ router.get("/voterId/:voterId", getVotersByVoterId);
  * @access Private (requires admin authentication via JWT)
  */
 router.get("/stats", getVoterStats);
+
+/**
+ * @route GET /api/voters/getCSV
+ * @desc Export voter data to CSV (up to 4000 records)
+ * @access Public
+ */
+router.get("/getCSV", exportVotersToCSV);
 
 export default router;

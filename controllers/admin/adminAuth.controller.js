@@ -5,7 +5,7 @@ import config from "../../configs/config.js";
 
 // get admin details
 export const getAdminDetails = async (req, res) => {
-  console.log("> reached getAdminDetails controller");
+  // console.log("> reached getAdminDetails controller");
   try {
     // req.admin is set by the verifyAdminToken middleware
     const admin = req.admin;
@@ -66,7 +66,6 @@ export const loginAdmin = async (req, res) => {
     res.status(500).json({ message: "Internal server error" });
   }
 };
-
 
 export const registerAdmin = async (req, res) => {
   try {
